@@ -177,7 +177,7 @@ export const projects: readonly Project[] = [
 		image: '/images/optimized/voya.webp',
 		width: 962,
 		height: 808,
-		url: 'https://voyawander.netlify.app/',
+		url: 'https://voyawander-vacation.netlify.app/',
 		year: '2025',
 	},
 	{
