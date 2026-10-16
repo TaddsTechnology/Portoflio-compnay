@@ -21,11 +21,8 @@ const description = 'A selection of recent product design and front-end work.';
 
 <style>
 	.page {
-		display: grid;
-		/* `safe` keeps the stack reachable on a viewport too short to centre in. */
-		align-items: safe center;
-		justify-items: stretch;
-		min-height: 100dvh;
-		padding: var(--s-4) var(--gutter);
+		/* Normal flow: the grid is as tall as it needs to be and the page scrolls.
+		   The bottom padding keeps the floating controls clear of the last row. */
+		padding: var(--s-4) var(--gutter) 6rem;
 	}
 </style>

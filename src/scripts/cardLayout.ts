@@ -5,9 +5,8 @@ import {
 	clamp,
 	fieldBounds,
 	gridPlan,
-	scatterPositions,
+	scatterPlan,
 	type Box,
-	type Size,
 } from './cardGeometry';
 
 gsap.registerPlugin(Draggable, InertiaPlugin);
@@ -31,16 +30,19 @@ export interface Arrangement {
 	scale: number;
 	/** True when the cards are too small to carry readable text. */
 	compact: boolean;
+	/** Height the field needs, so the page can scroll to fit it. */
+	fieldHeight: number;
 	slots: Slot[];
 	bounds: Box;
 }
 
-/** Below this rendered size a title is a smudge rather than a label, so the card
-    shows its photo alone — the details view carries every word. */
+/** Below this rendered size a title is a smudge rather than a label. */
 const MIN_TITLE_PX = 9;
 
 export interface ArrangementOptions {
-	field: Size;
+	fieldWidth: number;
+	/** Shortest field to use, so a short grid still fills the screen. */
+	minFieldHeight: number;
 	count: number;
 	/** Height / width. */
 	ratio: number;
@@ -49,7 +51,6 @@ export interface ArrangementOptions {
 	/** Rendered font size of the card title at base size. */
 	titleSize: number;
 	pad: number;
-	bottomBand: number;
 	seed: number;
 }
 
@@ -58,9 +59,10 @@ function assemble(
 	options: ArrangementOptions,
 	cardWidth: number,
 	cardHeight: number,
+	fieldHeight: number,
 	placements: Array<{ x: number; y: number; rotation: number }>,
 ): Arrangement {
-	const { field, baseCardWidth, titleSize, pad, bottomBand } = options;
+	const { fieldWidth, baseCardWidth, titleSize, pad } = options;
 	const scale = baseCardWidth > 0 ? cardWidth / baseCardWidth : 1;
 
 	return {
@@ -71,27 +73,19 @@ function assemble(
 		// The type scales with the card, so what matters is what the title actually
 		// renders at, not how wide the card is.
 		compact: titleSize * scale < MIN_TITLE_PX,
+		fieldHeight,
 		slots: placements.map((placement, i) => ({ ...placement, zIndex: i + 1 })),
-		bounds: fieldBounds(cardWidth, cardHeight, field, pad, bottomBand),
+		bounds: fieldBounds(cardWidth, cardHeight, { width: fieldWidth, height: fieldHeight }, pad),
 	};
-}
-
-export interface ScatterOptions extends ArrangementOptions {
-	/**
-	 * Card size, normally taken from the grid. Both arrangements have to agree on
-	 * it, or they disagree about whether a title is readable and the same project
-	 * shows its name in one mode and not the other.
-	 */
-	cardWidth: number;
 }
 
 export function gridArrangement(options: ArrangementOptions): Arrangement {
 	const plan = gridPlan({
-		field: options.field,
+		fieldWidth: options.fieldWidth,
 		count: options.count,
 		ratio: options.ratio,
 		pad: options.pad,
-		bottomBand: options.bottomBand,
+		minFieldHeight: options.minFieldHeight,
 	});
 
 	return assemble(
@@ -99,28 +93,33 @@ export function gridArrangement(options: ArrangementOptions): Arrangement {
 		options,
 		plan.cardWidth,
 		plan.cardHeight,
+		plan.fieldHeight,
 		plan.cells.map((cell) => ({ ...cell, rotation: 0 })),
 	);
 }
 
-export function scatterArrangement(options: ScatterOptions): Arrangement {
-	const cardHeight = options.cardWidth * options.ratio;
+export function scatterArrangement(options: ArrangementOptions): Arrangement {
+	/* The grid decides the card size and the scatter borrows it, so a project shows
+	   its title in both arrangements or in neither. */
+	const grid = gridPlan({
+		fieldWidth: options.fieldWidth,
+		count: options.count,
+		ratio: options.ratio,
+		pad: options.pad,
+		minFieldHeight: options.minFieldHeight,
+	});
 
-	return assemble(
-		'scatter',
-		options,
-		options.cardWidth,
-		cardHeight,
-		scatterPositions({
-			field: options.field,
-			count: options.count,
-			cardWidth: options.cardWidth,
-			cardHeight,
-			seed: options.seed,
-			pad: options.pad,
-			bottomBand: options.bottomBand,
-		}),
-	);
+	const plan = scatterPlan({
+		fieldWidth: options.fieldWidth,
+		count: options.count,
+		cardWidth: grid.cardWidth,
+		cardHeight: grid.cardHeight,
+		pad: options.pad,
+		minFieldHeight: options.minFieldHeight,
+		seed: options.seed,
+	});
+
+	return assemble('scatter', options, grid.cardWidth, grid.cardHeight, plan.fieldHeight, plan.positions);
 }
 
 export interface DragConfig {

@@ -69,42 +69,45 @@ const ratio = height / width;
 <style>
 	.swap {
 		position: relative;
-		--card-w: min(var(--card-w-max, 68.75rem), 100%);
+		/* The size the card element is laid out at before an arrangement scales it.
+	   Fixed, so a card's type stays in a predictable range at any scale. In px
+	   because the controller reads this back to derive the scale. */
+		--card-w: 624px;
 		--card-h: calc(var(--card-w) * var(--card-ratio, 0.79));
-		/* The field: cards use the whole page box, and the dock floats over it. */
-		align-self: stretch;
 	}
 
 	.swap__clip {
-		height: 100%;
 		overflow: hidden;
 	}
 
 	.swap__stage {
 		position: relative;
 		width: 100%;
-		height: 100%;
+		/* Height is set by the controller, to whatever the arrangement needs — the
+		   grid is allowed to run past the fold and the page scrolls to it. */
 		perspective: 1200px;
 		transform: translateZ(0);
 	}
 
 	.swap__dock {
-		position: absolute;
-		bottom: 0;
+		position: fixed;
+		bottom: 1.5rem;
 		left: 50%;
 		display: flex;
-		align-items: center;
-		gap: var(--s-2) var(--s-4);
+		gap: var(--s-2);
 		transform: translateX(-50%);
+		z-index: 50;
 	}
 
 	.swap__mode {
 		padding: 0.5rem 0.875rem;
 		border: 1px solid var(--line);
 		border-radius: 999px;
+		background: rgba(250, 249, 247, 0.9);
 		color: var(--muted);
 		font-size: var(--step--1);
 		letter-spacing: 0.04em;
+		backdrop-filter: blur(10px);
 		transition:
 			color 0.25s var(--ease-out),
 			border-color 0.25s var(--ease-out);

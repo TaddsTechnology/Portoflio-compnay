@@ -1,5 +1,4 @@
 import gsap from 'gsap';
-import type { Size } from './cardGeometry';
 import {
 	createDrag,
 	DRAG_LIFT,
@@ -21,16 +20,8 @@ interface Options {
 	motion: 'always' | 'system';
 }
 
-/* Cards are laid out at a share of the field and then scaled to an arrangement's
-   size, which keeps the type in a readable range at every scale. */
-const BASE_FIT = 0.9;
-const BASE_SPREAD = 0.3;
-const BASE_FRAME = 1.4;
-const MIN_BASE_WIDTH = 240;
-
-/* Inset from the field edges, and the band the floating controls need. */
+/* Inset from the field edges. */
 const PAD = 24;
-const DOCK_CLEARANCE = 20;
 
 const TRANSITION_DURATION = 0.95;
 const TRANSITION_STAGGER = 0.045;
@@ -53,7 +44,6 @@ export function initCardSwap(root: HTMLElement): void {
 
 	const stage = root.querySelector<HTMLElement>('.swap__stage');
 	const clip = root.querySelector<HTMLElement>('.swap__clip');
-	const dock = root.querySelector<HTMLElement>('.swap__dock');
 	const cards = Array.from(root.querySelectorAll<HTMLElement>('[data-card]'));
 	const modeButton = root.querySelector<HTMLElement>('[data-swap-mode]');
 	const shuffleButton = root.querySelector<HTMLElement>('[data-swap-shuffle]');
@@ -64,7 +54,7 @@ export function initCardSwap(root: HTMLElement): void {
 		refWidth: readNumber(root.dataset.width, 1100),
 		refHeight: readNumber(root.dataset.height, 870),
 		seed: readNumber(root.dataset.seed, 7),
-		startMode: root.dataset.mode === 'grid' ? 'grid' : 'scatter',
+		startMode: root.dataset.mode === 'scatter' ? 'scatter' : 'grid',
 		motion: root.dataset.motion === 'system' ? 'system' : 'always',
 	};
 	const ratio = options.refHeight / options.refWidth;
@@ -76,62 +66,48 @@ export function initCardSwap(root: HTMLElement): void {
 	let arranged: Arrangement | null = null;
 	let drag: DragController | null = null;
 	let dealer: gsap.core.Timeline | null = null;
-	let baseCardWidth = options.refWidth;
-	let titleSize = 0;
 	let frame = 0;
 	let lastClipWidth = 0;
 	let lastViewportHeight = 0;
 	let reduced =
 		options.motion === 'system' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-	const fieldBox = (): Size => ({ width: clip.clientWidth, height: clip.clientHeight });
-	const bottomBand = (): number => (dock ? dock.offsetHeight + DOCK_CLEARANCE : DOCK_CLEARANCE);
-	const slotIndexFor = (cardIndex: number): number => Math.max(0, order.indexOf(cardIndex));
+	/* Cards are laid out at this size and then scaled to an arrangement's card
+	   size, which keeps their type in a readable range at every scale. */
+	const baseCardWidth =
+		Number.parseFloat(getComputedStyle(root).getPropertyValue('--card-w')) || options.refWidth;
 
-	const heightBudget = (): number => {
+	/* Measured, not assumed: whether a card keeps its text depends on what the
+	   title actually renders at, which is a function of the card's own width. */
+	const titleElement = cards[0]?.querySelector<HTMLElement>('.card__title');
+	const titleSize = titleElement
+		? Number.parseFloat(getComputedStyle(titleElement).fontSize) || 0
+		: 0;
+
+	const pagePadding = (): number => {
 		const parent = root.parentElement;
-		const padding = parent
+		return parent
 			? Number.parseFloat(getComputedStyle(parent).paddingTop) +
-				Number.parseFloat(getComputedStyle(parent).paddingBottom)
+					Number.parseFloat(getComputedStyle(parent).paddingBottom)
 			: 0;
-		return window.innerHeight - (root.offsetHeight - stage.offsetHeight) - padding;
 	};
 
-	/* What the cards are laid out at before a mode scales them down. */
-	const measure = (): void => {
-		const available = fieldBox().width || options.refWidth;
-		baseCardWidth = Math.max(
-			MIN_BASE_WIDTH,
-			Math.min(
-				options.refWidth,
-				available / (1 + BASE_SPREAD),
-				(heightBudget() * BASE_FIT) / BASE_FRAME / ratio,
-			),
-		);
-		root.style.setProperty('--card-w', `${baseCardWidth}px`);
-		root.style.setProperty('--card-h', `${baseCardWidth * ratio}px`);
-
-		/* Measured, not assumed: whether a card keeps its text depends on what the
-		   title actually renders at, which is a function of the card's own width. */
-		const title = cards[0]?.querySelector<HTMLElement>('.card__title');
-		if (title) titleSize = Number.parseFloat(getComputedStyle(title).fontSize) || 0;
-	};
+	const fieldWidth = (): number => clip.clientWidth || options.refWidth;
+	/* A short grid still fills the screen, so the page never looks half empty. */
+	const minFieldHeight = (): number => Math.max(360, window.innerHeight - pagePadding());
 
 	const buildArrangement = (target: Mode): Arrangement => {
 		const shared = {
-			field: fieldBox(),
+			fieldWidth: fieldWidth(),
+			minFieldHeight: minFieldHeight(),
 			count: cards.length,
 			ratio,
 			baseCardWidth,
 			titleSize,
 			pad: PAD,
-			bottomBand: bottomBand(),
 			seed: options.seed,
 		};
-		/* The grid decides the card size and the scatter borrows it, so a project
-		   shows its title in both arrangements or in neither. */
-		const grid = gridArrangement(shared);
-		return target === 'grid' ? grid : scatterArrangement({ ...shared, cardWidth: grid.cardWidth });
+		return target === 'grid' ? gridArrangement(shared) : scatterArrangement(shared);
 	};
 
 	const style = (card: HTMLElement, slot: Slot, scale: number): void => {
@@ -174,7 +150,8 @@ export function initCardSwap(root: HTMLElement): void {
 		if (mode !== 'grid' || !arranged) return;
 		const index = cards.indexOf(card);
 		if (index < 0) return;
-		const slot = arranged.slots[slotIndexFor(index)]!;
+		const position = Math.max(0, order.indexOf(index));
+		const slot = arranged.slots[position]!;
 		const distance = Math.hypot(
 			(gsap.getProperty(card, 'x') as number) - slot.x,
 			(gsap.getProperty(card, 'y') as number) - slot.y,
@@ -222,6 +199,9 @@ export function initCardSwap(root: HTMLElement): void {
 
 		const plan = buildArrangement(mode);
 		arranged = plan;
+		/* The field grows to hold the arrangement; the page scrolls to fit it. */
+		stage.style.height = `${plan.fieldHeight}px`;
+
 		cards.forEach((card) => {
 			card.dataset.compact = String(plan.compact);
 		});
@@ -245,9 +225,9 @@ export function initCardSwap(root: HTMLElement): void {
 			},
 		});
 		dealer.to(cards, {
-			x: (i: number) => plan.slots[slotIndexFor(i)]!.x,
-			y: (i: number) => plan.slots[slotIndexFor(i)]!.y,
-			rotation: (i: number) => plan.slots[slotIndexFor(i)]!.rotation,
+			x: (i: number) => plan.slots[order.indexOf(i)]!.x,
+			y: (i: number) => plan.slots[order.indexOf(i)]!.y,
+			rotation: (i: number) => plan.slots[order.indexOf(i)]!.rotation,
 			scale: plan.scale,
 			z: 0,
 			skewY: 0,
@@ -282,7 +262,6 @@ export function initCardSwap(root: HTMLElement): void {
 			lastViewportHeight = window.innerHeight;
 			/* A transition owns the cards right now; a resize can land when it's done. */
 			if (dealer?.isActive()) return;
-			measure();
 			apply(false);
 		});
 	};
@@ -296,8 +275,8 @@ export function initCardSwap(root: HTMLElement): void {
 		reduced = options.motion === 'system' && event.matches;
 	});
 
-	/* Width only: the stage drives the clip height, so watching height too would
-	   feed this observer its own output. */
+	/* Width only: the field's height follows the arrangement, so watching that as
+	   well would feed this observer its own output. */
 	new ResizeObserver((entries) => {
 		const width = Math.round(entries[0]?.contentRect.width ?? 0);
 		if (width === lastClipWidth) return;
@@ -309,7 +288,6 @@ export function initCardSwap(root: HTMLElement): void {
 		schedule();
 	});
 
-	measure();
 	apply(false);
 	lastClipWidth = Math.round(clip.clientWidth);
 	lastViewportHeight = window.innerHeight;
