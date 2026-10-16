@@ -24,12 +24,14 @@ const { projects } = Astro.props;
 		projects.map((project) => (
 			<article class="dialog__panel" data-detail={project.slug} hidden>
 				<figure class="dialog__figure">
+					{/* Eager, not lazy: the card already fetched this exact URL, so it
+					    comes from cache instantly rather than leaving a blank panel. */}
 					<img
 						src={project.image}
 						alt=""
-						width="800"
-						height="600"
-						loading="lazy"
+						width={project.width}
+						height={project.height}
+						loading="eager"
 						decoding="async"
 					/>
 				</figure>
@@ -124,16 +126,22 @@ const { projects } = Astro.props;
 	}
 
 	.dialog__figure {
+		display: grid;
+		place-items: center;
 		margin: 0;
-		aspect-ratio: 4 / 3;
 		overflow: hidden;
 		background: var(--paper);
 	}
 
+	/* The width/height on the image reserve its exact box, so the photo takes its
+	   own proportions: nothing cropped out of it, no letterboxing invented around
+	   it. Screenshots here run from 1.19:1 to 2.31:1. */
 	.dialog__figure img {
+		display: block;
 		width: 100%;
-		height: 100%;
-		object-fit: cover;
+		height: auto;
+		max-height: 72dvh;
+		object-fit: contain;
 	}
 
 	.dialog__body {

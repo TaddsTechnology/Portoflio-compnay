@@ -32,8 +32,9 @@ for (const name of names) {
 	const size = statSync(input).size;
 	before += size;
 	after += result.size;
+	// Printed so a new project's entry can carry its width/height too.
 	console.log(
-		`${name}: ${Math.round(size / 1024)} KB -> ${Math.round(result.size / 1024)} KB (${result.width}x${result.height})`,
+		`${name}: ${Math.round(size / 1024)} KB -> ${Math.round(result.size / 1024)} KB  width: ${result.width}, height: ${result.height}`,
 	);
 }
 

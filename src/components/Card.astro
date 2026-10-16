@@ -16,8 +16,8 @@ const ordinal = String(index).padStart(2, '0');
 		<img
 			src={project.image}
 			alt=""
-			width="800"
-			height="600"
+			width={project.width}
+			height={project.height}
 			loading={eager ? 'eager' : 'lazy'}
 			decoding="async"
 			fetchpriority={eager ? 'high' : 'auto'}
