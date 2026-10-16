@@ -1,12 +1,9 @@
-import { HOLD_EVENT, RELEASE_EVENT } from './cardSwap';
-
 /**
  * One dialog holds every project's details; opening swaps which panel is shown.
  * Keeping the panels in the markup means no data is serialised into JS and
  * there is no HTML injection step.
  */
-export function initProjectDialog(): void {
-	const dialog = document.querySelector<HTMLDialogElement>('[data-project-dialog]');
+export function initProjectDialog(): void {	const dialog = document.querySelector<HTMLDialogElement>('[data-project-dialog]');
 	if (!dialog) return;
 
 	const panels = Array.from(dialog.querySelectorAll<HTMLElement>('[data-detail]'));
@@ -28,7 +25,6 @@ export function initProjectDialog(): void {
 		});
 		opener = trigger;
 		dialog.showModal();
-		document.dispatchEvent(new CustomEvent(HOLD_EVENT));
 	};
 
 	document.addEventListener('click', (event) => {
@@ -50,7 +46,6 @@ export function initProjectDialog(): void {
 	});
 
 	dialog.addEventListener('close', () => {
-		document.dispatchEvent(new CustomEvent(RELEASE_EVENT));
 		opener?.focus();
 		opener = null;
 	});

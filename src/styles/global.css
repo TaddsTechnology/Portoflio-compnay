@@ -165,11 +165,13 @@ html.js .swap--ready [data-card] {
 	transition: opacity 0.45s var(--ease-out);
 }
 
-html:not(.js) .swap__clip {
+html:not(.js) .swap__clip,
+html.swap-fallback .swap__clip {
 	overflow: visible;
 }
 
-html:not(.js) .swap__stage {
+html:not(.js) .swap__stage,
+html.swap-fallback .swap__stage {
 	display: grid;
 	gap: var(--s-4);
 	width: 100%;
@@ -178,18 +180,21 @@ html:not(.js) .swap__stage {
 	perspective: none;
 }
 
-html:not(.js) .swap__dock {
+html:not(.js) .swap__dock,
+html.swap-fallback .swap__dock {
 	display: none;
 }
 
-html:not(.js) [data-card] {
+html:not(.js) [data-card],
+html.swap-fallback [data-card] {
 	position: static;
 	width: 100%;
 	height: auto;
 	opacity: 1;
 }
 
-html:not(.js) .card__media {
+html:not(.js) .card__media,
+html.swap-fallback .card__media {
 	height: 13.75rem;
 }
 

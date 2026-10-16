@@ -27,16 +27,19 @@ const { title, description } = Astro.props;
 		<meta property="og:description" content={description} />
 		<meta name="twitter:card" content="summary_large_image" />
 		<script is:inline>
-			// The cards stay hidden until the GSAP controller has placed them, so
-			// that gate keys off script execution rather than markup. If the
-			// controller never reports in, undo it instead of leaving a blank
-			// stage behind.
+			// The cards stay hidden until the controller has placed them, so that
+			// gate keys off script execution rather than markup. If the controller
+			// is slow or never reports in, fall back to a readable list — but
+			// *reversibly*: the controller clears this again when it runs, so a late
+			// script still upgrades to the animation instead of being stuck.
 			document.documentElement.classList.add('js');
-			setTimeout(function () {
+			var fallback = function () {
 				if (!document.querySelector('.swap--ready')) {
-					document.documentElement.classList.remove('js');
+					document.documentElement.classList.add('swap-fallback');
 				}
-			}, 2000);
+			};
+			setTimeout(fallback, 2500);
+			document.addEventListener('DOMContentLoaded', fallback);
 		</script>
 	</head>
 	<body>

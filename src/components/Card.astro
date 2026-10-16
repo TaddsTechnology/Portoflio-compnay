@@ -73,10 +73,10 @@ const ordinal = String(index).padStart(2, '0');
 		/* Every size below is relative to the card, so a narrow card on a phone
 		   keeps the same proportions instead of overflowing. */
 		container-type: inline-size;
-	}
 
-	.card[data-active='false'] {
-		pointer-events: none;
+		/* A card is dragged, not clicked through, so the browser must not claim the
+		   gesture for scrolling. */
+		touch-action: none;
 	}
 
 	.card__media {
@@ -217,14 +217,8 @@ const ordinal = String(index).padStart(2, '0');
 		display: none;
 	}
 
-	/* In the field a card is dragged, not clicked through, so the browser must not
-	   claim the gesture for scrolling. */
-	:global(.swap.is-scatter) .card {
-		touch-action: none;
-	}
-
-	:global(.swap.is-scatter) .card:hover,
-	:global(.swap.is-scatter) .card[data-dragging='true'] {
+	.card:hover,
+	.card[data-dragging='true'] {
 		box-shadow:
 			0 2px 2px rgba(20, 21, 26, 0.04),
 			0 26px 60px -26px rgba(20, 21, 26, 0.5);
