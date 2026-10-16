@@ -4,7 +4,7 @@
 //
 // Originals in public/images are left untouched. Optimised copies are written to
 // public/images/optimized, and those are what the site serves.
-import { mkdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
@@ -14,7 +14,10 @@ const source = join(root, 'public', 'images');
 const dest = join(source, 'optimized');
 
 const data = readFileSync(join(root, 'src', 'data', 'projects.ts'), 'utf8');
-const names = [...data.matchAll(/image: '\/images\/([^']+)\.png'/g)].map((match) => match[1]);
+// Names come from the entries themselves; the source PNG shares the basename.
+const names = [...data.matchAll(/image: '\/images\/optimized\/([^']+)\.webp'/g)].map(
+	(match) => match[1],
+);
 if (names.length === 0) throw new Error('no project images found in src/data/projects.ts');
 
 mkdirSync(dest, { recursive: true });
@@ -23,6 +26,10 @@ let before = 0;
 let after = 0;
 for (const name of names) {
 	const input = join(source, `${name}.png`);
+	if (!existsSync(input)) {
+		console.warn(`skipped ${name}: no public/images/${name}.png to read`);
+		continue;
+	}
 	const output = join(dest, `${name}.webp`);
 	const result = await sharp(input)
 		.resize({ width: 1600, withoutEnlargement: true })
