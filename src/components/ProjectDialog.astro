@@ -1,0 +1,257 @@
+---
+import type { Project } from '../data/projects';
+
+interface Props {
+	projects: readonly Project[];
+}
+
+const { projects } = Astro.props;
+---
+
+<dialog class="dialog" data-project-dialog aria-label="Project details">
+	<button type="button" class="dialog__close" data-project-close aria-label="Close details">
+		<svg viewBox="0 0 16 16" aria-hidden="true">
+			<path
+				d="M4.5 4.5l7 7M11.5 4.5l-7 7"
+				fill="none"
+				stroke="currentColor"
+				stroke-width="1.5"
+				stroke-linecap="round"></path>
+		</svg>
+	</button>
+
+	{
+		projects.map((project) => (
+			<article class="dialog__panel" data-detail={project.slug} hidden>
+				<figure class="dialog__figure">
+					<img
+						src={project.image}
+						alt=""
+						width="800"
+						height="600"
+						loading="lazy"
+						decoding="async"
+					/>
+				</figure>
+
+				<div class="dialog__body">
+					<ul class="dialog__tags">
+						{project.tags.map((tag) => (
+							<li>{tag}</li>
+						))}
+					</ul>
+
+					<h2 class="dialog__title">{project.title}</h2>
+					<p class="dialog__desc">{project.description}</p>
+
+					<dl class="dialog__meta">
+						<div>
+							<dt>Year</dt>
+							<dd>{project.year}</dd>
+						</div>
+						<div>
+							<dt>Role</dt>
+							<dd>{project.role}</dd>
+						</div>
+					</dl>
+
+					<a class="dialog__link" href={project.url} target="_blank" rel="noopener noreferrer">
+						View project
+						<svg viewBox="0 0 16 16" aria-hidden="true">
+							<path
+								d="M3 8h9M8.5 3.5 13 8l-4.5 4.5"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="1.5"
+								stroke-linecap="round"
+								stroke-linejoin="round"></path>
+						</svg>
+					</a>
+				</div>
+			</article>
+		))
+	}
+</dialog>
+
+<style>
+	.dialog {
+		width: min(54rem, 92vw);
+		max-width: none;
+		max-height: 88dvh;
+		padding: 0;
+		overflow: auto;
+		border: 0;
+		border-radius: 1rem;
+		background: var(--surface);
+		color: var(--ink);
+	}
+
+	.dialog::backdrop {
+		background: rgba(20, 21, 26, 0.45);
+		backdrop-filter: blur(4px);
+	}
+
+	.dialog__close {
+		position: absolute;
+		top: var(--s-3);
+		right: var(--s-3);
+		z-index: 2;
+		display: grid;
+		place-items: center;
+		width: 2.25rem;
+		height: 2.25rem;
+		border: 1px solid var(--line);
+		border-radius: 999px;
+		background: rgba(255, 255, 255, 0.9);
+		color: var(--ink);
+		backdrop-filter: blur(6px);
+		transition:
+			color 0.25s var(--ease-out),
+			border-color 0.25s var(--ease-out);
+	}
+
+	.dialog__close:hover {
+		border-color: var(--line-strong);
+		color: var(--accent);
+	}
+
+	.dialog__close svg {
+		width: 0.875rem;
+	}
+
+	.dialog__panel {
+		display: grid;
+	}
+
+	.dialog__figure {
+		margin: 0;
+		aspect-ratio: 4 / 3;
+		overflow: hidden;
+		background: var(--paper);
+	}
+
+	.dialog__figure img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+
+	.dialog__body {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: var(--s-3);
+		padding: clamp(1.5rem, 4vw, 2.75rem);
+	}
+
+	.dialog__tags {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0 0.5rem;
+		font-size: var(--step--1);
+		font-weight: 500;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--muted);
+	}
+
+	.dialog__tags li + li::before {
+		content: '·';
+		margin-right: 0.5rem;
+		color: var(--line-strong);
+	}
+
+	.dialog__title {
+		font-size: var(--step-2);
+	}
+
+	.dialog__desc {
+		max-width: 42ch;
+		color: var(--ink-soft);
+	}
+
+	.dialog__meta {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--s-6);
+		width: 100%;
+		margin-top: var(--s-2);
+		padding-top: var(--s-4);
+		border-top: 1px solid var(--line);
+	}
+
+	.dialog__meta dt {
+		font-size: var(--step--1);
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--muted);
+	}
+
+	.dialog__meta dd {
+		font-size: var(--step-0);
+	}
+
+	.dialog__link {
+		display: inline-flex;
+		align-items: center;
+		gap: var(--s-2);
+		margin-top: var(--s-1);
+		padding-bottom: 2px;
+		border-bottom: 1px solid var(--line-strong);
+		transition: color 0.25s var(--ease-out);
+	}
+
+	.dialog__link:hover {
+		color: var(--accent);
+	}
+
+	.dialog__link svg {
+		width: 0.875rem;
+	}
+
+	@media (min-width: 48rem) {
+		.dialog__panel {
+			grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+		}
+
+		.dialog__figure {
+			aspect-ratio: auto;
+		}
+	}
+
+	@media (pointer: coarse) {
+		.dialog__close {
+			width: 2.75rem;
+			height: 2.75rem;
+		}
+	}
+
+	@media (prefers-reduced-motion: no-preference) {
+		.dialog[open] {
+			animation: dialog-in 0.3s var(--ease-out) both;
+		}
+
+		.dialog[open]::backdrop {
+			animation: backdrop-in 0.3s var(--ease-out) both;
+		}
+	}
+
+	@keyframes dialog-in {
+		from {
+			opacity: 0;
+			transform: translateY(0.5rem);
+		}
+	}
+
+	@keyframes backdrop-in {
+		from {
+			opacity: 0;
+		}
+	}
+</style>
+
+<script>
+	import { initProjectDialog } from '../scripts/projectDialog';
+
+	initProjectDialog();
+</script>

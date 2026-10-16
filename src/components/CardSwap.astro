@@ -1,0 +1,351 @@
+---
+import Card from './Card.astro';
+import type { Project } from '../data/projects';
+
+interface Props {
+	projects: readonly Project[];
+	label?: string;
+	/** Reference geometry, in px. Distances and type scale with the card, so
+	    these only fix the ratio; the runtime clamps the card to whatever space
+	    the column and the window actually have. */
+	width?: number;
+	height?: number;
+	/** How far the deck fans out across the whole stack, as a fraction of the
+	    card. The per-card gap is derived from the card count, so a deep deck
+	    stays contained instead of spreading off-screen. */
+	spread?: number;
+	/** Milliseconds between swaps. */
+	delay?: number;
+	skewAmount?: number;
+	easing?: 'linear' | 'elastic';
+	pauseOnHover?: boolean;
+	/** `always` (default) runs the cycle regardless of the OS motion setting;
+	    `system` honours `prefers-reduced-motion` and swaps without animating. */
+	motion?: 'always' | 'system';
+	/** Initial state. `stack` plays the fan first, then deals itself out. */
+	mode?: 'stack' | 'scatter';
+	/** ms after mount before the deck deals itself out. 0 disables. */
+	scatterAfter?: number;
+	/** Target share of the field the scattered deck covers. */
+	coverage?: number;
+	/** Seed for the scatter, so a reload reproduces the same arrangement. */
+	seed?: number;
+}
+
+const {
+	projects,
+	label = 'Selected projects',
+	width = 1100,
+	height = 870,
+	spread = 0.3,
+	delay = 4000,
+	skewAmount = 4,
+	easing = 'elastic',
+	pauseOnHover = true,
+	motion = 'always',
+	mode = 'stack',
+	scatterAfter = 2600,
+	coverage = 0.42,
+	seed = 7,
+} = Astro.props;
+
+const total = projects.length;
+const ratio = height / width;
+const pad = (n: number) => String(n).padStart(2, '0');
+---
+
+<div
+	class="swap"
+	data-card-swap
+	data-width={width}
+	data-height={height}
+	data-spread={spread}
+	data-delay={delay}
+	data-skew={skewAmount}
+	data-easing={easing}
+	data-pause-on-hover={String(pauseOnHover)}
+	data-motion={motion}
+	data-mode={mode}
+	data-scatter-after={scatterAfter}
+	data-coverage={coverage}
+	data-seed={seed}
+	style={`--card-w-max:${width}px;--card-ratio:${ratio};--count:${total};`}
+>
+	<div class="swap__clip">
+		<div class="swap__stage" role="group" aria-roledescription="carousel" aria-label={label}>
+			{
+				projects.map((project, i) => (
+					<Card project={project} index={i + 1} eager={i === 0} />
+				))
+			}
+		</div>
+	</div>
+
+	<div class="swap__dock">
+		<p class="swap__counter" aria-hidden="true">
+			<span data-swap-current>{pad(1)}</span><span class="swap__counter-sep">/</span>{pad(total)}
+		</p>
+
+		<div class="swap__ticks">
+			{
+				projects.map((project, i) => (
+					<button
+						type="button"
+						class="swap__tick"
+						data-swap-tick={i}
+						aria-current={i === 0 ? 'true' : 'false'}
+						aria-label={`Show ${project.title}`}
+					>
+						<span />
+					</button>
+				))
+			}
+		</div>
+
+		<div class="swap__nav">
+			<button type="button" class="swap__nav-btn" data-swap-prev aria-label="Previous project">
+				<svg viewBox="0 0 16 16" aria-hidden="true">
+					<path
+						d="M13 8H4M7.5 3.5 3 8l4.5 4.5"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="1.5"
+						stroke-linecap="round"
+						stroke-linejoin="round"></path>
+				</svg>
+			</button>
+			<button type="button" class="swap__nav-btn" data-swap-next aria-label="Next project">
+				<svg viewBox="0 0 16 16" aria-hidden="true">
+					<path
+						d="M3 8h9M8.5 3.5 13 8l-4.5 4.5"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="1.5"
+						stroke-linecap="round"
+						stroke-linejoin="round"></path>
+				</svg>
+			</button>
+		</div>
+
+		<button
+			type="button"
+			class="swap__mode"
+			data-swap-mode
+			aria-pressed="false"
+			aria-label="Switch between the stacked deck and a scattered view"
+		>
+			<span class="swap__mode-label swap__mode-label--stack">Scatter</span>
+			<span class="swap__mode-label swap__mode-label--scatter">Arrange</span>
+		</button>
+
+		<button type="button" class="swap__mode swap__shuffle" data-swap-shuffle>
+			Shuffle
+		</button>
+	</div>
+
+	<p class="sr-only" aria-live="polite" data-swap-live></p>
+</div>
+
+<style>
+	.swap {
+		--card-ratio: 0.79;
+		--card-w: min(var(--card-w-max, 68.75rem), 100%);
+		--card-h: calc(var(--card-w) * var(--card-ratio));
+		/* Stage height as a multiple of the card: the fan plus slack. The
+		   controller writes the real value; this is the pre-script fallback, and
+		   matches the defaults (spread 0.3 + slack 0.1). */
+		--frame: 1.4;
+		--dist-x: 2.5rem;
+		position: relative;
+	}
+
+	/* Clipping and perspective have to sit on separate elements: overflow on the
+	   perspective element flattens the 3D stack in several engines. */
+	.swap__clip {
+		overflow: hidden;
+	}
+
+	.swap__stage {
+		position: relative;
+		width: calc(var(--card-w) + var(--dist-x) * (var(--count) - 1));
+		/* The fan plus a little slack, which is also the room the dropping card
+		   has before it leaves the clip. */
+		height: calc(var(--card-h) * var(--frame));
+		margin-inline: auto;
+		perspective: 1200px;
+		transform: translateZ(0);
+	}
+
+	.swap__dock {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--s-2) var(--s-4);
+		/* Sized to its content and centred under the stack, rather than
+		   stretched across the column the way the stage is. */
+		width: fit-content;
+		margin-inline: auto;
+		margin-top: var(--s-5);
+	}
+
+	.swap__counter {
+		font-size: var(--step--1);
+		font-variant-numeric: tabular-nums;
+		letter-spacing: 0.1em;
+		color: var(--ink);
+	}
+
+	.swap__counter-sep {
+		padding-inline: 0.4em;
+		color: var(--line-strong);
+	}
+
+	.swap__ticks {
+		display: flex;
+		margin-left: auto;
+	}
+
+	.swap__tick {
+		display: block;
+		padding: var(--s-3) var(--s-1);
+	}
+
+	.swap__tick span {
+		display: block;
+		width: 1.25rem;
+		height: 2px;
+		background: var(--line-strong);
+		transition:
+			background 0.3s var(--ease-out),
+			transform 0.3s var(--ease-out);
+	}
+
+	.swap__tick:hover span {
+		background: var(--muted);
+	}
+
+	.swap__tick[aria-current='true'] span {
+		background: var(--accent);
+		transform: scaleY(2);
+	}
+
+	.swap__nav {
+		display: flex;
+		gap: var(--s-2);
+	}
+
+	.swap__nav-btn {
+		display: grid;
+		place-items: center;
+		width: 2rem;
+		height: 2rem;
+		border: 1px solid var(--line);
+		border-radius: 999px;
+		color: var(--muted);
+		transition:
+			color 0.25s var(--ease-out),
+			border-color 0.25s var(--ease-out);
+	}
+
+	.swap__nav-btn:hover {
+		border-color: var(--line-strong);
+		color: var(--ink);
+	}
+
+	.swap__nav-btn svg {
+		width: 0.875rem;
+	}
+
+	.swap__mode {
+		padding: 0.5rem 0.875rem;
+		border: 1px solid var(--line);
+		border-radius: 999px;
+		color: var(--muted);
+		font-size: var(--step--1);
+		letter-spacing: 0.04em;
+		transition:
+			color 0.25s var(--ease-out),
+			border-color 0.25s var(--ease-out);
+	}
+
+	.swap__mode:hover {
+		border-color: var(--line-strong);
+		color: var(--ink);
+	}
+
+	.swap__mode-label--scatter,
+	.swap__shuffle {
+		display: none;
+	}
+
+	.swap.is-scatter .swap__mode-label--stack {
+		display: none;
+	}
+
+	.swap.is-scatter .swap__mode-label--scatter,
+	.swap.is-scatter .swap__shuffle {
+		display: inline-flex;
+	}
+
+	/* ----------------------------------------------------------------- scatter
+	   Scattered, the cards get the whole field and the dock floats over it, so
+	   nothing is competing for the same rows. The field box is what the
+	   controller measures against. */
+	.swap.is-scatter {
+		align-self: stretch;
+	}
+
+	.swap.is-scatter .swap__clip {
+		height: 100%;
+	}
+
+	.swap.is-scatter .swap__stage {
+		width: 100%;
+		height: 100%;
+		margin-inline: 0;
+	}
+
+	.swap.is-scatter .swap__dock {
+		position: absolute;
+		bottom: 0;
+		left: 50%;
+		margin-top: 0;
+		transform: translateX(-50%);
+	}
+
+	.swap.is-scatter .swap__counter,
+	.swap.is-scatter .swap__ticks,
+	.swap.is-scatter .swap__nav {
+		display: none;
+	}
+
+	/* The tick row needs ~420px once the stack is deep; below this the counter
+	   and arrows carry the control rather than wrapping into two rows of noise. */
+	@media (max-width: 45rem) {
+		.swap__ticks {
+			display: none;
+		}
+
+		.swap__dock {
+			justify-content: center;
+		}
+	}
+
+	/* Comfortable tap targets where the pointer is a finger. */
+	@media (pointer: coarse) {
+		.swap__tick {
+			padding-block: 1.25rem;
+		}
+
+		.swap__nav-btn {
+			width: 2.75rem;
+			height: 2.75rem;
+		}
+	}
+</style>
+
+<script>
+	import { initCardSwaps } from '../scripts/cardSwap';
+
+	initCardSwaps();
+</script>

@@ -1,0 +1,204 @@
+/* Design tokens, reset, and global utilities.
+   Component-specific rules belong in the component's scoped <style>. */
+
+:root {
+	--paper: #faf9f7;
+	--surface: #ffffff;
+	--ink: #14151a;
+	--ink-soft: #383c44;
+	--muted: #6b6f76;
+	--line: rgba(20, 21, 26, 0.1);
+	--line-strong: rgba(20, 21, 26, 0.22);
+	--accent: #b0492e;
+
+	--font-display: 'Instrument Serif', ui-serif, Georgia, 'Times New Roman', serif;
+	--font-sans: 'Inter Variable', Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
+		Arial, sans-serif;
+
+	--step--1: 0.8125rem;
+	--step-0: 1.0625rem;
+	--step-1: clamp(1.1875rem, calc(1.1vw + 0.95rem), 1.375rem);
+	--step-2: clamp(1.625rem, calc(2.2vw + 1.1rem), 2.25rem);
+	--step-3: clamp(2.5rem, calc(6vw + 0.5rem), 4.25rem);
+
+	--s-1: 0.25rem;
+	--s-2: 0.5rem;
+	--s-3: 0.75rem;
+	--s-4: 1rem;
+	--s-5: 1.5rem;
+	--s-6: 2rem;
+	--s-7: 3rem;
+	--s-8: 4rem;
+	--s-9: 6rem;
+
+	--shell: 72.5rem;
+	--gutter: clamp(1.25rem, 4vw, 2.5rem);
+	--ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+html {
+	-webkit-text-size-adjust: 100%;
+}
+
+body {
+	margin: 0;
+	background: var(--paper);
+	color: var(--ink);
+	font-family: var(--font-sans);
+	font-size: var(--step-0);
+	line-height: 1.6;
+	-webkit-font-smoothing: antialiased;
+	text-rendering: optimizeLegibility;
+}
+
+h1,
+h2,
+h3 {
+	margin: 0;
+	font-family: var(--font-display);
+	font-weight: 400;
+	line-height: 1.05;
+	letter-spacing: -0.01em;
+}
+
+[hidden] {
+	display: none !important;
+}
+
+p,
+figure,
+blockquote,
+dl,
+dd {
+	margin: 0;
+}
+
+ul,
+ol {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+img,
+svg {
+	display: block;
+	max-width: 100%;
+}
+
+a {
+	color: inherit;
+	text-decoration: none;
+}
+
+button {
+	padding: 0;
+	border: 0;
+	background: none;
+	color: inherit;
+	font: inherit;
+	cursor: pointer;
+}
+
+:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 3px;
+	border-radius: 2px;
+}
+
+::selection {
+	background: var(--accent);
+	color: #fff;
+}
+
+.shell {
+	width: 100%;
+	max-width: var(--shell);
+	margin-inline: auto;
+	padding-inline: var(--gutter);
+}
+
+.eyebrow {
+	font-size: var(--step--1);
+	font-weight: 500;
+	letter-spacing: 0.16em;
+	text-transform: uppercase;
+	color: var(--muted);
+}
+
+.sr-only {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	margin: -1px;
+	padding: 0;
+	overflow: hidden;
+	white-space: nowrap;
+	clip-path: inset(50%);
+	border: 0;
+}
+
+/* ---------------------------------------------------------------------------
+   CardSwap: reveal gate and no-JS fallback.
+
+   These rules cross the CardSwap.astro / Card.astro boundary, so they live here
+   instead of in either component's scoped styles.
+
+   The controller places every card with GSAP on init; without this gate the
+   cards paint as a pile at dead centre first. Hiding them only under `html.js`
+   keeps the no-JS path readable, and the layout script drops that class again if
+   the controller never reports in.
+--------------------------------------------------------------------------- */
+
+html.js [data-card] {
+	opacity: 0;
+}
+
+html.js .swap--ready [data-card] {
+	opacity: 1;
+	transition: opacity 0.45s var(--ease-out);
+}
+
+html:not(.js) .swap__clip {
+	overflow: visible;
+}
+
+html:not(.js) .swap__stage {
+	display: grid;
+	gap: var(--s-4);
+	width: 100%;
+	max-width: 26rem;
+	height: auto;
+	perspective: none;
+}
+
+html:not(.js) .swap__dock {
+	display: none;
+}
+
+html:not(.js) [data-card] {
+	position: static;
+	width: 100%;
+	height: auto;
+	opacity: 1;
+}
+
+html:not(.js) .card__media {
+	height: 13.75rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		scroll-behavior: auto !important;
+	}
+}

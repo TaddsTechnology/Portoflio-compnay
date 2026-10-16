@@ -1,11 +1,31 @@
 ---
-import Welcome from '../components/Welcome.astro';
+import CardSwap from '../components/CardSwap.astro';
+import ProjectDialog from '../components/ProjectDialog.astro';
 import Layout from '../layouts/Layout.astro';
+import { projects } from '../data/projects';
 
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
+// The only thing on this page is the stack. Heading is here for the document
+// outline only; add visible copy later if the page needs it.
+const title = 'Selected work';
+const description = 'A selection of recent product design and front-end work.';
 ---
 
-<Layout>
-	<Welcome />
+<Layout {title} {description}>
+	<main class="page">
+		<h1 class="sr-only">{title}</h1>
+		<CardSwap projects={projects} />
+	</main>
+
+	<ProjectDialog projects={projects} />
 </Layout>
+
+<style>
+	.page {
+		display: grid;
+		/* `safe` keeps the stack reachable on a viewport too short to centre in. */
+		align-items: safe center;
+		justify-items: stretch;
+		min-height: 100dvh;
+		padding: var(--s-4) var(--gutter);
+	}
+</style>
