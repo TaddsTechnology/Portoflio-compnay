@@ -1,4 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="800" height="600">
-	<rect width="800" height="600" fill="#f1ece5" />
-	<g fill="none" stroke="#14151a" stroke-opacity="0.15" stroke-width="2"><circle cx="400" cy="300" r="60" /><circle cx="400" cy="300" r="120" /><circle cx="400" cy="300" r="180" /><circle cx="400" cy="300" r="240" /><circle cx="400" cy="300" r="300" /></g><path d="M400 300 495.25518549937124 112.84645438709856" stroke="#b0492e" stroke-width="2" fill="none" /><circle cx="400" cy="300" r="11" fill="#b0492e" /><circle cx="495.25518549937124" cy="112.84645438709856" r="7" fill="#14151a" fill-opacity="0.6" />
-</svg>

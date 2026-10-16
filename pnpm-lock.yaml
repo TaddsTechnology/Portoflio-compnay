@@ -20,6 +20,10 @@ importers:
       gsap:
         specifier: ^3.15.0
         version: 3.15.0
+    devDependencies:
+      sharp:
+        specifier: ^0.35.5
+        version: 0.35.5
 
 packages:
 
@@ -1425,8 +1429,7 @@ snapshots:
 
   '@fontsource/instrument-serif@5.3.0': {}
 
-  '@img/colour@1.1.0':
-    optional: true
+  '@img/colour@1.1.0': {}
 
   '@img/sharp-darwin-arm64@0.35.5':
     optionalDependencies:
@@ -2174,8 +2177,7 @@ snapshots:
 
   sax@1.6.1: {}
 
-  semver@7.8.5:
-    optional: true
+  semver@7.8.5: {}
 
   sharp@0.35.5:
     dependencies:
@@ -2208,7 +2210,6 @@ snapshots:
       '@img/sharp-win32-arm64': 0.35.5
       '@img/sharp-win32-ia32': 0.35.5
       '@img/sharp-win32-x64': 0.35.5
-    optional: true
 
   shiki@4.5.0:
     dependencies:
